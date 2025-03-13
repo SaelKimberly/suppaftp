@@ -14,7 +14,7 @@ use std::string::String;
 use std::time::Duration;
 
 use async_std::io::prelude::BufReadExt;
-use async_std::io::{copy, BufReader, Read, Write};
+use async_std::io::{BufReader, Read, Write, copy};
 use async_std::net::{TcpListener, TcpStream, ToSocketAddrs};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 // export
@@ -29,9 +29,9 @@ pub use tls::{AsyncNativeTlsConnector, AsyncNativeTlsStream};
 #[cfg(feature = "async-rustls")]
 pub use tls::{AsyncRustlsConnector, AsyncRustlsStream};
 
+use super::Status;
 use super::regex::{EPSV_PORT_RE, MDTM_RE, PASV_PORT_RE, SIZE_RE};
 use super::types::{FileType, FtpError, FtpResult, Mode, Response};
-use super::Status;
 use crate::command::Command;
 #[cfg(feature = "async-secure")]
 use crate::command::ProtectionLevel;
@@ -789,7 +789,7 @@ where
                         return Err(FtpError::ConnectionError(std::io::Error::new(
                             std::io::ErrorKind::TimedOut,
                             e,
-                        )))
+                        )));
                     }
                 }
             }
@@ -1051,9 +1051,9 @@ mod test {
     use serial_test::serial;
 
     use super::*;
+    use crate::AsyncFtpStream;
     use crate::test_container::SyncPureFtpRunner;
     use crate::types::FormatControl;
-    use crate::AsyncFtpStream;
 
     #[async_attributes::test]
     async fn connect() {
@@ -1088,20 +1088,24 @@ mod test {
             .await
             .unwrap();
         assert!(stream.login("test", "test").await.is_ok());
-        assert!(stream
-            .get_welcome_msg()
-            .unwrap()
-            .contains("220 You will be disconnected after 15 minutes of inactivity."));
+        assert!(
+            stream
+                .get_welcome_msg()
+                .unwrap()
+                .contains("220 You will be disconnected after 15 minutes of inactivity.")
+        );
     }
 
     #[async_attributes::test]
     async fn welcome_message() {
         crate::log_init();
         let (stream, _container) = setup_stream().await;
-        assert!(stream
-            .get_welcome_msg()
-            .unwrap()
-            .contains("220 You will be disconnected after 15 minutes of inactivity."));
+        assert!(
+            stream
+                .get_welcome_msg()
+                .unwrap()
+                .contains("220 You will be disconnected after 15 minutes of inactivity.")
+        );
         finalize_stream(stream).await;
     }
 
@@ -1186,10 +1190,12 @@ mod test {
     async fn set_transfer_type() {
         let (mut stream, _container) = setup_stream().await;
         assert!(stream.transfer_type(FileType::Binary).await.is_ok());
-        assert!(stream
-            .transfer_type(FileType::Ascii(FormatControl::Default))
-            .await
-            .is_ok());
+        assert!(
+            stream
+                .transfer_type(FileType::Ascii(FormatControl::Default))
+                .await
+                .is_ok()
+        );
         finalize_stream(stream).await;
     }
 
@@ -1280,7 +1286,7 @@ mod test {
         let mut stream = stream.passive_stream_builder(move |addr| {
             let container_t = container_t.clone();
             Box::pin(async move {
-                let mut addr = addr.clone();
+                let mut addr = addr;
                 let port = addr.port();
                 let mapped = container_t.get_mapped_port(port);
 
@@ -1417,7 +1423,7 @@ mod test {
         let ftp_stream = ftp_stream.passive_stream_builder(move |addr| {
             let container_t = container_t.clone();
             Box::pin(async move {
-                let mut addr = addr.clone();
+                let mut addr = addr;
                 let port = addr.port();
                 let mapped = container_t.get_mapped_port(port);
 

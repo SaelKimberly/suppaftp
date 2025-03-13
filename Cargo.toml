@@ -4,8 +4,8 @@ resolver = "2"
 
 [workspace.package]
 version = "6.1.0"
-edition = "2021"
-rust-version = "1.71.1"
+edition = "2024"
+rust-version = "1.85.0"
 authors = [
   "Christian Visintin <christian.visintin@veeso.dev>",
   "Matt McCoy <mattnenterprise@yahoo.com>",
