@@ -830,7 +830,7 @@ where
 
         let response: Response = Response::new(code, body);
         // Return Ok or error with response
-        if expected_code.iter().any(|ec| code == *ec) {
+        if expected_code.contains(&code) {
             Ok(response)
         } else {
             Err(FtpError::UnexpectedResponse(response))
