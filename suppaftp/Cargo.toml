@@ -25,7 +25,6 @@ name = "suppaftp"
 path = "src/lib.rs"
 
 [dependencies]
-chrono = { version = "^0.4", default-features = false, features = ["clock"] }
 lazy-regex = "^3"
 log = "^0.4"
 thiserror = "^2"
@@ -46,11 +45,20 @@ rustls-crate = { package = "rustls", version = "^0.23", default-features = false
 ], optional = true }
 futures-lite = "2"
 
+[target.'cfg(any(target_os = "windows"))'.dependencies]
+chrono = { version = "0.4.40", default-features = false, features = [
+  "now",
+  "winapi",
+] }
+
+[target.'cfg(not(any(target_os = "windows")))'.dependencies]
+chrono = { version = "0.4.40", default-features = false, features = ["now"] }
+
 [dev-dependencies]
 async-attributes = "1.1.2"
 env_logger = "^0.11"
 pretty_assertions = "^1.0.0"
-rand = "^0.8.4"
+rand = "^0.9"
 serial_test = "^3.0"
 testcontainers = { version = "0.23", features = ["blocking"] }
 webpki-roots = "0.26"

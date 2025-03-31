@@ -5,7 +5,7 @@
 mod data_stream;
 mod tls;
 
-use std::io::{copy, BufRead, BufReader, Cursor, Read, Write};
+use std::io::{BufRead, BufReader, Cursor, Read, Write, copy};
 #[cfg(not(feature = "secure"))]
 use std::marker::PhantomData;
 use std::net::{Ipv4Addr, SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
@@ -23,9 +23,9 @@ pub use tls::{NativeTlsConnector, NativeTlsStream};
 #[cfg(feature = "rustls")]
 pub use tls::{RustlsConnector, RustlsStream};
 
+use super::Status;
 use super::regex::{EPSV_PORT_RE, MDTM_RE, PASV_PORT_RE, SIZE_RE};
 use super::types::{FileType, FtpError, FtpResult, Mode, Response};
-use super::Status;
 use crate::command::Command;
 #[cfg(feature = "secure")]
 use crate::command::ProtectionLevel;
@@ -834,7 +834,7 @@ where
 
         let response: Response = Response::new(code, body);
         // Return Ok or error with response
-        if expected_code.iter().any(|ec| code == *ec) {
+        if expected_code.contains(&code) {
             Ok(response)
         } else {
             Err(FtpError::UnexpectedResponse(response))
@@ -1039,14 +1039,14 @@ mod test {
 
     #[cfg(feature = "secure")]
     use pretty_assertions::assert_eq;
-    use rand::distributions::Alphanumeric;
-    use rand::{thread_rng, Rng};
+    use rand::distr::Alphanumeric;
+    use rand::{Rng, rng};
     use serial_test::serial;
 
     use super::*;
+    use crate::FtpStream;
     use crate::test_container::SyncPureFtpRunner;
     use crate::types::FormatControl;
-    use crate::FtpStream;
 
     #[test]
     fn connect() {
@@ -1113,10 +1113,12 @@ mod test {
 
         let mut stream = FtpStream::connect_timeout(addr, Duration::from_secs(15)).unwrap();
         assert!(stream.login("test", "test").is_ok());
-        assert!(stream
-            .get_welcome_msg()
-            .unwrap()
-            .contains("220 You will be disconnected after 15 minutes of inactivity."));
+        assert!(
+            stream
+                .get_welcome_msg()
+                .unwrap()
+                .contains("220 You will be disconnected after 15 minutes of inactivity.")
+        );
     }
 
     #[test]
@@ -1124,10 +1126,12 @@ mod test {
     fn welcome_message() {
         crate::log_init();
         with_test_ftp_stream(|stream| {
-            assert!(stream
-                .get_welcome_msg()
-                .unwrap()
-                .contains("220 You will be disconnected after 15 minutes of inactivity."));
+            assert!(
+                stream
+                    .get_welcome_msg()
+                    .unwrap()
+                    .contains("220 You will be disconnected after 15 minutes of inactivity.")
+            );
         });
     }
 
@@ -1144,10 +1148,12 @@ mod test {
     fn get_ref() {
         use std::time::Duration;
         with_test_ftp_stream(|stream| {
-            assert!(stream
-                .get_ref()
-                .set_read_timeout(Some(Duration::from_secs(10)))
-                .is_ok());
+            assert!(
+                stream
+                    .get_ref()
+                    .set_read_timeout(Some(Duration::from_secs(10)))
+                    .is_ok()
+            );
         });
     }
 
@@ -1204,9 +1210,11 @@ mod test {
     fn set_transfer_type() {
         with_test_ftp_stream(|stream| {
             assert!(stream.transfer_type(FileType::Binary).is_ok());
-            assert!(stream
-                .transfer_type(FileType::Ascii(FormatControl::Default))
-                .is_ok());
+            assert!(
+                stream
+                    .transfer_type(FileType::Ascii(FormatControl::Default))
+                    .is_ok()
+            );
         })
     }
 
@@ -1369,7 +1377,7 @@ mod test {
         let container_t = container.clone();
 
         ftp_stream.passive_stream_builder(move |addr| {
-            let mut addr = addr.clone();
+            let mut addr = addr;
             let port = addr.port();
             let mapped = container_t.get_mapped_port(port);
 
@@ -1391,7 +1399,7 @@ mod test {
     }
 
     fn generate_tempdir() -> String {
-        let mut rng = thread_rng();
+        let mut rng = rng();
         let name: String = std::iter::repeat(())
             .map(|()| rng.sample(Alphanumeric))
             .map(char::from)
